@@ -9,8 +9,7 @@
 
 仅做个人备份使用.
 
-### 反馈： [@YiAn7s_bot](https://t.me/YiAn7s_bot) 
-频道： [@Yi_WeChat](https://t.me/Yi_WeChat) 
+### 反馈： [@YiAn7s_bot](https://t.me/YiAn7s_bot) 频道： [@Yi_WeChat](https://t.me/Yi_WeChat) 
 
 #### 免责声明
 * 项目内所涉及脚本、LOGO 仅为资源共享、学习参考之目的，不保证其合法性、正当性、准确性；切勿使用项目做任何商业用途或牟利；
