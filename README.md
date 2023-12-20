@@ -1,7 +1,7 @@
 # [WeChat_Dump](https://github.com/yinanan77/Yi_WeChat/releases/tag/WeChat_dump)
 默认全权限纯净砸壳
 
-# WeChat_deb
+# [WeChat_Plugins](https://github.com/yinanan77/Yi_WeChat/releases/tag/WeChat_Plugins)
 旧版本插件备份
 
 ## [Dump更远古的版本](https://pan.baidu.com/s/1WZpndbxXHYqokTMe4gEOYw)  
