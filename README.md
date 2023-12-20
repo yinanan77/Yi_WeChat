@@ -1,4 +1,4 @@
-# [WeChat_Dump]（https://github.com/yinanan77/Yi_WeChat/releases/tag/WeChat_dump）
+# [WeChat_Dump](https://github.com/yinanan77/Yi_WeChat/releases/tag/WeChat_dump)
 默认全权限纯净砸壳
 
 # WeChat_deb
