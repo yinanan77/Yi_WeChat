@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run upstream FairPlay retrieval locally on the owner's jailbroken iPhone."""
 import argparse
+import hashlib
+import struct
 import os
 import plistlib
 import shutil
@@ -14,7 +16,7 @@ sys.path.insert(0, str(HERE / "upstream" / "credential-retrieval"))
 import retrieve as upstream
 
 class LocalDevice:
-    command = ["/bin/sh", "-c"]
+    command = [shutil.which("sh") or "/var/jb/bin/sh", "-c"]
 
     def __init__(self):
         self.directory = tempfile.mkdtemp(prefix="fp-retrieve-", dir="/var/tmp")
@@ -71,6 +73,51 @@ def apps():
             continue
     return sorted(result, key=lambda row: (row[0], row[1]))
 
+
+def trust_binaries(bundle):
+    jbctl = shutil.which("jbctl")
+    if not jbctl and Path("/var/jb/basebin/jbctl").is_file():
+        jbctl = "/var/jb/basebin/jbctl"
+    if not jbctl:
+        raise RuntimeError("Dopamine jbctl was not found. Ensure jailbreak is active.")
+    for path in sorted(bundle.glob("*.ios")):
+        data = path.read_bytes()
+        if data[:4] != b"\xcf\xfa\xed\xfe":
+            raise RuntimeError("Expected a thin arm64 Mach-O: " + path.name)
+        pos = 32
+        signature = None
+        for _ in range(struct.unpack_from("<I", data, 16)[0]):
+            cmd, size = struct.unpack_from("<II", data, pos)
+            if size < 8 or pos + size > len(data):
+                raise RuntimeError("Invalid load command")
+            if cmd == 0x1d:
+                offset, length = struct.unpack_from("<II", data, pos + 8)
+                signature = data[offset:offset + length]
+            pos += size
+        if signature is None or struct.unpack_from(">I", signature)[0] != 0xfade0cc0:
+            raise RuntimeError("Missing code signature: " + path.name)
+        found = False
+        for i in range(struct.unpack_from(">I", signature, 8)[0]):
+            slot, offset = struct.unpack_from(">II", signature, 12 + 8 * i)
+            magic, length = struct.unpack_from(">II", signature, offset)
+            if magic != 0xfade0c02:
+                continue
+            directory = signature[offset:offset + length]
+            hash_type = directory[37]
+            if hash_type == 1:
+                digest = hashlib.sha1(directory).digest()[:20]
+            elif hash_type in (2, 3):
+                digest = hashlib.sha256(directory).digest()[:20]
+            else:
+                continue
+            result = subprocess.run([jbctl, "trustcache", "add", digest.hex()],
+                                    capture_output=True, text=True, timeout=15)
+            if result.returncode:
+                raise RuntimeError("Dopamine could not trust " + path.name + ": " + result.stderr + result.stdout)
+            found = True
+        if not found:
+            raise RuntimeError("No supported CodeDirectory: " + path.name)
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bundle-id", help="installed App Store app to select")
@@ -105,6 +152,7 @@ def main():
     for name in upstream.DEVICE_FILES:
         if not (bundle / name).is_file():
             parser.error("Missing bundle file: " + name)
+    trust_binaries(bundle)
     device = LocalDevice()
     try:
         for name in upstream.DEVICE_FILES:
