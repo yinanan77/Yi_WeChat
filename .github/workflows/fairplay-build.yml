@@ -19,6 +19,13 @@ jobs:
         run: brew install ldid
       - name: Compile iPhone tools
         run: make -C upstream/credential-retrieval
+      - name: Normalize iOS IOKit path and re-sign
+        run: |
+          for helper in credential driver; do
+            binary="upstream/credential-retrieval/build/bundle/$helper.ios"
+            xcrun install_name_tool -change /System/Library/Frameworks/IOKit.framework/Versions/A/IOKit /System/Library/Frameworks/IOKit.framework/IOKit "$binary"
+            ldid -S"upstream/credential-retrieval/$helper/$helper.entitlements.plist" "$binary"
+          done
       - name: Package and inspect
         run: |
           mkdir -p FairPlay-iPhone/bundle FairPlay-iPhone/upstream/credential-retrieval
