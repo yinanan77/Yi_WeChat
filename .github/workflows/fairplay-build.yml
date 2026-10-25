@@ -1,0 +1,42 @@
+name: Build FairPlay iPhone tools
+on:
+  push:
+    branches: [fairplay-cloud-build]
+    paths: ['.github/workflows/fairplay-build.yml', 'fairplay-mobile/**']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned upstream
+        run: |
+          git clone https://github.com/EthanArbuckle/fairplay-decrypt.git upstream
+          git -C upstream checkout 7f80db2ef37634073fab06b3aad1aa0cf24561a1
+      - name: Install signing tool
+        run: brew install ldid
+      - name: Compile iPhone tools
+        run: make -C upstream/credential-retrieval
+      - name: Package and inspect
+        run: |
+          mkdir -p FairPlay-iPhone/bundle FairPlay-iPhone/upstream/credential-retrieval
+          cp upstream/credential-retrieval/build/bundle/* FairPlay-iPhone/bundle/
+          cp upstream/credential-retrieval/retrieve.py upstream/credential-retrieval/native_ssh.py FairPlay-iPhone/upstream/credential-retrieval/
+          cp fairplay-mobile/mobile-retrieve.py FairPlay-iPhone/
+          python3 -m py_compile FairPlay-iPhone/mobile-retrieve.py
+          for binary in FairPlay-iPhone/bundle/*.ios; do
+            file "$binary"
+            ldid -e "$binary"
+            xcrun otool -L "$binary"
+          done
+          rm -rf FairPlay-iPhone/__pycache__
+          printf '%s\n' 'Upstream: EthanArbuckle/fairplay-decrypt' 'Commit: 7f80db2ef37634073fab06b3aad1aa0cf24561a1' 'Adapter is unverified on physical hardware. No credentials are included.' > FairPlay-iPhone/BUILD.txt
+          find FairPlay-iPhone -type f -exec shasum -a 256 {} \; > SHA256SUMS
+          tar -czf FairPlay-iPhone.tar.gz FairPlay-iPhone SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FairPlay-iPhone
+          path: FairPlay-iPhone.tar.gz
+          retention-days: 14
