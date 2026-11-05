@@ -56,3 +56,18 @@
 ORCH_TOKEN=some_secure_random_value_123456789012 python app.py
 python -m unittest discover -s tests -v
 ```
+
+## 安卓 Termux 运行（不用服务器，不绑定银行卡）
+
+目前 Render 创建服务时返回 `402 Payment information is required`，即使选择 Free 方案也需要满足账户支付信息要求。可以先使用安卓本机：
+
+```sh
+pkg update -y && pkg install python git -y
+git clone --depth 1 --branch orchestrator-deploy https://github.com/yinanan77/Yi_WeChat.git ~/yi-orchestrator
+cd ~/yi-orchestrator
+bash run-termux.sh
+```
+
+在**安卓本机浏览器**打开 `http://127.0.0.1:8000`，输入 Termux 显示的管理员令牌。随后在网页上填目标和 OpenRouter API Key 即可运行。密钥只用于该次任务，不写入任务日志。
+
+没有服务器账单，但 Termux 关闭、安卓系统杀后台、断网仍可能中断任务。127.0.0.1 只能从安卓本机打开，不能直接从 iPhone 打开。
