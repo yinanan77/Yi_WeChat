@@ -96,13 +96,13 @@ def llm(messages, model=None, key_override=None):
             raise RuntimeError('模型未返回文字内容。')
         return content.strip()
     except urllib.error.HTTPError as e:
-        detail = e.read(600).decode('utf-8', errors='replace')
-        # Never expose provider echo data, tokens or raw prompts in job/UI.
+        # Discard provider error body: it might contain private prompt details.
+        e.read(600)
         if e.code == 401:
             raise RuntimeError('模型 API Key 无效或无权限。') from None
         if e.code == 429:
             raise RuntimeError('免费模型触发限流，请稍后重试。') from None
-        raise RuntimeError(f'模型接口 HTTP {e.code}：{detail[:180]}') from None
+        raise RuntimeError(f'模型接口 HTTP {e.code}，请检查配置或模型是否可用。') from None
     except (urllib.error.URLError, TimeoutError) as e:
         raise RuntimeError('连接模型接口失败或超时。') from e
 
